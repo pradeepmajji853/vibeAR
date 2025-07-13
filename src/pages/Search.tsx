@@ -29,78 +29,78 @@ const Search = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [hasSearched, setHasSearched] = useState<boolean>(false);
 
-  // Featured local models from assets folder
+  // Featured models - Using external URLs for 3D models to avoid large file issues
   const featuredModels = [
     {
-      id: 'broken-steampunk-clock',
-      name: 'Broken Steampunk Clock',
-      category: 'Decorative',
-      author: 'Local Collection',
-      thumbnail: 'https://images.pexels.com/photos/707676/pexels-photo-707676.jpeg?auto=compress&cs=tinysrgb&w=300',
-      description: 'Vintage steampunk style broken clock with intricate details',
-      likeCount: 42,
-      isDownloadable: true,
-      modelUrl: '/broken_steampunk_clock.glb',
-      embedUrl: null
-    },
-    {
-      id: 'old-wooden-chair',
-      name: 'Old Wooden Chair',
+      id: 'modern-chair',
+      name: 'Modern Chair',
       category: 'Seating',
-      author: 'Local Collection',
+      author: 'Sketchfab Collection',
       thumbnail: 'https://images.pexels.com/photos/963486/pexels-photo-963486.jpeg?auto=compress&cs=tinysrgb&w=300',
-      description: 'Classic vintage wooden chair with weathered finish',
-      likeCount: 38,
-      isDownloadable: true,
-      modelUrl: '/old_wooden_chair.glb',
+      description: 'Contemporary chair with sleek design',
+      likeCount: 42,
+      isDownloadable: false,
+      modelUrl: undefined,
       embedUrl: null
     },
     {
-      id: 'sofa',
+      id: 'wooden-table',
+      name: 'Wooden Table',
+      category: 'Furniture',
+      author: 'Sketchfab Collection',
+      thumbnail: 'https://images.pexels.com/photos/1571460/pexels-photo-1571460.jpeg?auto=compress&cs=tinysrgb&w=300',
+      description: 'Classic wooden table perfect for dining',
+      likeCount: 38,
+      isDownloadable: false,
+      modelUrl: undefined,
+      embedUrl: null
+    },
+    {
+      id: 'modern-sofa',
       name: 'Modern Sofa',
       category: 'Seating',
-      author: 'Local Collection',
+      author: 'Sketchfab Collection',
       thumbnail: 'https://images.pexels.com/photos/1148955/pexels-photo-1148955.jpeg?auto=compress&cs=tinysrgb&w=300',
       description: 'Contemporary comfortable sofa for living room',
       likeCount: 56,
-      isDownloadable: true,
-      modelUrl: '/sofa.glb',
+      isDownloadable: false,
+      modelUrl: undefined,
       embedUrl: null
     },
     {
-      id: 'wooden-bed',
-      name: 'Wooden Bed',
+      id: 'bed-frame',
+      name: 'Bed Frame',
       category: 'Bedroom',
-      author: 'Local Collection',
+      author: 'Sketchfab Collection',
       thumbnail: 'https://images.pexels.com/photos/271743/pexels-photo-271743.jpeg?auto=compress&cs=tinysrgb&w=300',
-      description: 'Solid wood bed frame with natural finish',
+      description: 'Elegant bed frame with modern styling',
       likeCount: 45,
-      isDownloadable: true,
-      modelUrl: '/wooden_bed.glb',
+      isDownloadable: false,
+      modelUrl: undefined,
       embedUrl: null
     },
     {
-      id: 'wooden-table-chair',
-      name: 'Wooden Table & Chair Set',
-      category: 'Dining',
-      author: 'Local Collection',
-      thumbnail: 'https://images.pexels.com/photos/1571460/pexels-photo-1571460.jpeg?auto=compress&cs=tinysrgb&w=300',
-      description: 'Classic wooden table and chair set',
-      likeCount: 52,
-      isDownloadable: true,
-      modelUrl: '/old_wooden_chair.glb',
-      embedUrl: null
-    },
-    {
-      id: 'mystery-model',
-      name: 'Decorative Item',
-      category: 'Decorative',
-      author: 'Local Collection',
+      id: 'coffee-table',
+      name: 'Coffee Table',
+      category: 'Furniture',
+      author: 'Sketchfab Collection',
       thumbnail: 'https://images.pexels.com/photos/1571181/pexels-photo-1571181.jpeg?auto=compress&cs=tinysrgb&w=300',
-      description: 'Unique decorative furniture piece',
+      description: 'Stylish coffee table for living spaces',
       likeCount: 28,
-      isDownloadable: true,
-      modelUrl: '/215a41d8b6d44ecdbd70cc9680c0f585.glb',
+      isDownloadable: false,
+      modelUrl: undefined,
+      embedUrl: null
+    },
+    {
+      id: 'bookshelf',
+      name: 'Modern Bookshelf',
+      category: 'Storage',
+      author: 'Sketchfab Collection',
+      thumbnail: 'https://images.pexels.com/photos/159581/dictionary-reference-book-learning-meaning-159581.jpeg?auto=compress&cs=tinysrgb&w=300',
+      description: 'Contemporary bookshelf for modern homes',
+      likeCount: 33,
+      isDownloadable: false,
+      modelUrl: undefined,
       embedUrl: null
     }
   ];
