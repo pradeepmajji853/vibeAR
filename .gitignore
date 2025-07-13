@@ -23,3 +23,25 @@ dist-ssr
 *.sln
 *.sw?
 .env
+
+# SSL certificates
+*.pem
+*.key
+*.crt
+
+# Backup and temporary files
+*.backup
+*.bak
+*.tmp
+*.temp
+*~
+
+# Test and debug files
+*test*.html
+*debug*.html
+*-test.*
+*-debug.*
+
+# Large assets (uncomment if needed)
+# *.glb
+# *.gltf
