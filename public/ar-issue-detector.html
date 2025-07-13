@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AR Issue Detector</title>
+    <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+    <style>
+        body { 
+            margin: 0; padding: 15px; font-family: -apple-system, BlinkMacSystemFont, sans-serif; 
+            background: #000; color: white; line-height: 1.4; font-size: 14px;
+        }
+        .container { max-width: 600px; margin: 0 auto; }
+        .test { 
+            margin: 20px 0; padding: 15px; background: #111; 
+            border-radius: 10px; border: 1px solid #333; 
+        }
+        .test h3 { margin-top: 0; color: #4CAF50; }
+        model-viewer { 
+            width: 100%; height: 200px; background: #222; 
+            border-radius: 8px; margin: 10px 0; 
+        }
+        .btn { 
+            background: #4CAF50; color: white; border: none; 
+            padding: 12px 20px; font-size: 14px; border-radius: 20px; 
+            cursor: pointer; margin: 5px; width: 100%;
+        }
+        .btn:hover { background: #45a049; }
+        .status { 
+            padding: 8px; margin: 8px 0; border-radius: 5px; 
+            font-size: 13px; word-break: break-all;
+        }
+        .success { background: #1b5e20; border: 1px solid #4caf50; }
+        .error { background: #b71c1c; border: 1px solid #f44336; }
+        .info { background: #1a237e; border: 1px solid #3f51b5; }
+        .critical { 
+            background: #e65100; padding: 15px; border-radius: 8px; 
+            margin: 15px 0; font-weight: bold;
+        }
+        .device-info {
+            background: #333; padding: 10px; border-radius: 5px;
+            font-family: monospace; font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 AR Issue Detector</h1>
+        <p>This tool will help identify why "could not load object" occurs</p>
+
+        <!-- Critical Issues Check -->
+        <div id="critical-issues" class="critical" style="display: none;">
+            <h3>🚨 Critical Issues Found:</h3>
+            <div id="critical-list"></div>
+        </div>
+
+        <!-- Device Detection -->
+        <div class="test">
+            <h3>📱 Device & Browser Detection</h3>
+            <div id="device-info" class="device-info">Detecting...</div>
+        </div>
+
+        <!-- SSL/Network Test -->
+        <div class="test">
+            <h3>🔒 Network & SSL Test</h3>
+            <div id="network-status" class="status info">Testing network connectivity...</div>
+            <button onclick="testNetwork()" class="btn">🔄 Re-test Network</button>
+        </div>
+
+        <!-- File Access Test -->
+        <div class="test">
+            <h3>📁 GLB File Access Test</h3>
+            <div id="file-status" class="status info">Testing file access...</div>
+            <button onclick="testFiles()" class="btn">🔄 Re-test Files</button>
+        </div>
+
+        <!-- Model Viewer Test -->
+        <div class="test">
+            <h3>🎯 Model Viewer Test</h3>
+            <model-viewer
+                id="test-model"
+                src="/sofa.glb"
+                ios-src="/sofa.glb"
+                alt="Test Model"
+                ar
+                ar-modes="webxr scene-viewer quick-look"
+                camera-controls
+                loading="lazy">
+                <button slot="ar-button" class="btn">📱 Test AR</button>
+            </model-viewer>
+            <div id="model-status" class="status info">Loading model...</div>
+        </div>
+
+        <!-- AR Support Test -->
+        <div class="test">
+            <h3>🥽 AR Support Test</h3>
+            <div id="ar-support" class="status info">Checking AR support...</div>
+            <button onclick="testDirectAR()" class="btn">🚀 Test Direct AR Launch</button>
+        </div>
+
+        <!-- Console Errors -->
+        <div class="test">
+            <h3>🐛 Console Errors</h3>
+            <div id="console-errors" class="status info">Monitoring console for errors...</div>
+            <button onclick="showConsoleErrors()" class="btn">📋 Show All Errors</button>
+        </div>
+
+        <!-- Results Summary -->
+        <div class="test">
+            <h3>📊 Diagnosis Summary</h3>
+            <div id="diagnosis" class="status info">Run all tests to see diagnosis...</div>
+        </div>
+    </div>
+
+    <script>
+        // Global error tracking
+        let consoleErrors = [];
+        let originalConsoleError = console.error;
+        console.error = function(...args) {
+            consoleErrors.push(args.join(' '));
+            originalConsoleError.apply(console, arguments);
+            updateConsoleErrors();
+        };
+
+        // Device detection
+        const isAndroid = /Android/i.test(navigator.userAgent);
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+        const isMobile = /Mobi|Android/i.test(navigator.userAgent);
+        const isChrome = /Chrome/i.test(navigator.userAgent);
+        const isSafari = /Safari/i.test(navigator.userAgent) && !isChrome;
+
+        let testResults = {
+            device: false,
+            network: false,
+            files: false,
+            model: false,
+            ar: false
+        };
+
+        document.addEventListener('DOMContentLoaded', function() {
+            detectDevice();
+            testNetwork();
+            testFiles();
+            setupModelListeners();
+            testARSupport();
+            setTimeout(generateDiagnosis, 3000);
+        });
+
+        function detectDevice() {
+            const deviceInfo = document.getElementById('device-info');
+            const info = {
+                platform: isAndroid ? 'Android' : isIOS ? 'iOS' : 'Desktop',
+                browser: isChrome ? 'Chrome' : isSafari ? 'Safari' : navigator.userAgent.split(' ')[0],
+                mobile: isMobile,
+                protocol: window.location.protocol,
+                host: window.location.host,
+                userAgent: navigator.userAgent
+            };
+
+            deviceInfo.innerHTML = Object.entries(info)
+                .map(([key, value]) => `${key}: ${value}`)
+                .join('<br>');
+
+            testResults.device = isMobile && (window.location.protocol === 'https:');
+            checkCriticalIssues();
+        }
+
+        async function testNetwork() {
+            const networkStatus = document.getElementById('network-status');
+            networkStatus.innerHTML = 'Testing network...';
+            
+            try {
+                const startTime = performance.now();
+                const response = await fetch('/', { method: 'HEAD' });
+                const endTime = performance.now();
+                const responseTime = Math.round(endTime - startTime);
+
+                if (response.ok) {
+                    networkStatus.innerHTML = `✅ Network OK (${responseTime}ms response time)`;
+                    networkStatus.className = 'status success';
+                    testResults.network = true;
+                } else {
+                    networkStatus.innerHTML = `❌ Network issue: ${response.status} ${response.statusText}`;
+                    networkStatus.className = 'status error';
+                }
+            } catch (error) {
+                networkStatus.innerHTML = `❌ Network error: ${error.message}`;
+                networkStatus.className = 'status error';
+            }
+            checkCriticalIssues();
+        }
+
+        async function testFiles() {
+            const fileStatus = document.getElementById('file-status');
+            fileStatus.innerHTML = 'Testing GLB file access...';
+            
+            const files = ['/sofa.glb', '/test-cube.glb'];
+            let results = [];
+
+            for (const file of files) {
+                try {
+                    const response = await fetch(file, { method: 'HEAD' });
+                    const contentType = response.headers.get('content-type');
+                    const contentLength = response.headers.get('content-length');
+                    const size = contentLength ? (parseInt(contentLength) / (1024 * 1024)).toFixed(2) + ' MB' : 'Unknown';
+                    
+                    if (response.ok) {
+                        results.push(`✅ ${file}: ${size}, MIME: ${contentType || 'not set'}`);
+                        if (file === '/sofa.glb') testResults.files = true;
+                    } else {
+                        results.push(`❌ ${file}: ${response.status} ${response.statusText}`);
+                    }
+                } catch (error) {
+                    results.push(`❌ ${file}: ${error.message}`);
+                }
+            }
+
+            fileStatus.innerHTML = results.join('<br>');
+            fileStatus.className = testResults.files ? 'status success' : 'status error';
+            checkCriticalIssues();
+        }
+
+        function setupModelListeners() {
+            const model = document.getElementById('test-model');
+            const status = document.getElementById('model-status');
+
+            model.addEventListener('load', () => {
+                status.innerHTML = '✅ Model loaded successfully! AR should work.';
+                status.className = 'status success';
+                testResults.model = true;
+                generateDiagnosis();
+            });
+
+            model.addEventListener('error', (event) => {
+                const errorMsg = event.detail || 'Unknown error';
+                status.innerHTML = `❌ Model failed to load: ${errorMsg}`;
+                status.className = 'status error';
+                consoleErrors.push(`Model error: ${errorMsg}`);
+                generateDiagnosis();
+            });
+
+            model.addEventListener('ar-status', (event) => {
+                status.innerHTML += `<br>📱 AR Status: ${event.detail.status}`;
+            });
+        }
+
+        function testARSupport() {
+            const arSupport = document.getElementById('ar-support');
+            
+            const tests = {
+                'Mobile Device': isMobile,
+                'HTTPS Protocol': window.location.protocol === 'https:',
+                'AR Platform': isAndroid || isIOS,
+                'Model Viewer': !!customElements.get('model-viewer'),
+                'Camera API': 'mediaDevices' in navigator,
+                'WebXR': 'xr' in navigator
+            };
+            
+            let output = '';
+            let allPassed = true;
+            
+            for (const [test, result] of Object.entries(tests)) {
+                output += `${result ? '✅' : '❌'} ${test}<br>`;
+                if (!result && (test === 'Mobile Device' || test === 'HTTPS Protocol' || test === 'AR Platform')) {
+                    allPassed = false;
+                }
+            }
+            
+            arSupport.innerHTML = output;
+            arSupport.className = allPassed ? 'status success' : 'status error';
+            testResults.ar = allPassed;
+            checkCriticalIssues();
+        }
+
+        function testDirectAR() {
+            if (isAndroid) {
+                const arUrl = `intent://arvr.google.com/scene-viewer/1.0?file=${encodeURIComponent(window.location.origin + '/sofa.glb')}&mode=ar_preferred#Intent;scheme=https;package=com.google.android.googlequicksearchbox;action=android.intent.action.VIEW;end;`;
+                window.location.href = arUrl;
+            } else if (isIOS) {
+                const link = document.createElement('a');
+                link.href = window.location.origin + '/sofa.glb';
+                link.rel = 'ar';
+                link.click();
+            } else {
+                alert('Direct AR only works on mobile devices');
+            }
+        }
+
+        function updateConsoleErrors() {
+            const consoleErrorsDiv = document.getElementById('console-errors');
+            if (consoleErrors.length > 0) {
+                consoleErrorsDiv.innerHTML = `❌ ${consoleErrors.length} errors detected. Click "Show All Errors" to see details.`;
+                consoleErrorsDiv.className = 'status error';
+            } else {
+                consoleErrorsDiv.innerHTML = '✅ No console errors detected';
+                consoleErrorsDiv.className = 'status success';
+            }
+        }
+
+        function showConsoleErrors() {
+            if (consoleErrors.length === 0) {
+                alert('No console errors detected!');
+            } else {
+                alert('Console Errors:\n\n' + consoleErrors.join('\n\n'));
+            }
+        }
+
+        function checkCriticalIssues() {
+            const criticalDiv = document.getElementById('critical-issues');
+            const criticalList = document.getElementById('critical-list');
+            let issues = [];
+
+            if (!isMobile) {
+                issues.push('❌ NOT ON MOBILE DEVICE - AR only works on phones/tablets');
+            }
+            if (window.location.protocol !== 'https:') {
+                issues.push('❌ NOT USING HTTPS - AR requires secure connection');
+            }
+            if (!isAndroid && !isIOS) {
+                issues.push('❌ UNSUPPORTED PLATFORM - Need Android or iOS device');
+            }
+
+            if (issues.length > 0) {
+                criticalList.innerHTML = issues.join('<br>');
+                criticalDiv.style.display = 'block';
+            } else {
+                criticalDiv.style.display = 'none';
+            }
+        }
+
+        function generateDiagnosis() {
+            const diagnosis = document.getElementById('diagnosis');
+            const passedTests = Object.values(testResults).filter(Boolean).length;
+            const totalTests = Object.keys(testResults).length;
+            
+            let message = `Tests Passed: ${passedTests}/${totalTests}<br><br>`;
+            
+            if (passedTests === totalTests) {
+                message += '🎉 <strong>All tests passed!</strong> AR should work properly.';
+                diagnosis.className = 'status success';
+            } else {
+                message += '<strong>Issues found:</strong><br>';
+                
+                if (!testResults.device) message += '• Device/HTTPS issue<br>';
+                if (!testResults.network) message += '• Network connectivity problem<br>';
+                if (!testResults.files) message += '• GLB files not accessible<br>';
+                if (!testResults.model) message += '• Model viewer not loading models<br>';
+                if (!testResults.ar) message += '• AR not supported on this device<br>';
+                
+                message += '<br><strong>Most likely fix:</strong> ';
+                if (!testResults.device) {
+                    message += 'Use a mobile device with HTTPS';
+                } else if (!testResults.files) {
+                    message += 'Check file permissions and MIME types';
+                } else if (!testResults.model) {
+                    message += 'SSL certificate not trusted - check device settings';
+                } else {
+                    message += 'Try a different device or browser';
+                }
+                
+                diagnosis.className = 'status error';
+            }
+            
+            diagnosis.innerHTML = message;
+        }
+    </script>
+</body>
+</html>

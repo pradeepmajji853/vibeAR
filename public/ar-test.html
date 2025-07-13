@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AR Model Test</title>
+    <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background: #000;
+            color: white;
+        }
+        model-viewer {
+            width: 100%;
+            height: 400px;
+            background-color: #333;
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #333;
+            border-radius: 10px;
+        }
+        .ar-button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 16px;
+            border-radius: 25px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        .status {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .success { background: #2d5a2d; }
+        .error { background: #5a2d2d; }
+        .info { background: #2d3d5a; }
+    </style>
+</head>
+<body>
+    <h1>🔍 AR Model Loading Test</h1>
+    
+    <div class="test-section">
+        <h2>1. Device & Browser Check</h2>
+        <div id="device-info" class="status info"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>2. GLB File Accessibility Test</h2>
+        <div id="file-status" class="status info">Testing file access...</div>
+    </div>
+
+    <div class="test-section">
+        <h2>3. Model Viewer - Sofa</h2>
+        <model-viewer
+            id="sofa-model"
+            src="/sofa.glb"
+            alt="Modern Sofa"
+            ar
+            ar-modes="webxr scene-viewer quick-look"
+            camera-controls
+            auto-rotate
+            environment-image="neutral"
+            shadow-intensity="1"
+            style="width: 100%; height: 400px;">
+            <button slot="ar-button" class="ar-button">
+                View Sofa in AR
+            </button>
+        </model-viewer>
+        <div id="sofa-status" class="status info">Loading...</div>
+    </div>
+
+    <div class="test-section">
+        <h2>4. Model Viewer - Chair</h2>
+        <model-viewer
+            id="chair-model"
+            src="/old_wooden_chair.glb"
+            alt="Wooden Chair"
+            ar
+            ar-modes="webxr scene-viewer quick-look"
+            camera-controls
+            auto-rotate
+            environment-image="neutral"
+            shadow-intensity="1"
+            style="width: 100%; height: 400px;">
+            <button slot="ar-button" class="ar-button">
+                View Chair in AR
+            </button>
+        </model-viewer>
+        <div id="chair-status" class="status info">Loading...</div>
+    </div>
+
+    <div class="test-section">
+        <h2>5. Model Viewer - Large Table</h2>
+        <model-viewer
+            id="table-model"
+            src="/wooden_tablechair__low-poly__game-ready.glb"
+            alt="Wooden Table"
+            ar
+            ar-modes="webxr scene-viewer quick-look"
+            camera-controls
+            auto-rotate
+            environment-image="neutral"
+            shadow-intensity="1"
+            style="width: 100%; height: 400px;">
+            <button slot="ar-button" class="ar-button">
+                View Table in AR
+            </button>
+        </model-viewer>
+        <div id="table-status" class="status info">Loading...</div>
+    </div>
+
+    <div class="test-section">
+        <h2>6. Manual AR Launch Test</h2>
+        <button onclick="launchSofaAR()" class="ar-button">🚀 Launch Sofa AR (Android)</button>
+        <button onclick="launchSofaARiOS()" class="ar-button">🍎 Launch Sofa AR (iOS)</button>
+        <div id="manual-status" class="status info">Click buttons to test manual AR launch</div>
+    </div>
+
+    <script>
+        // Device detection
+        function detectDevice() {
+            const info = document.getElementById('device-info');
+            const isAndroid = /Android/i.test(navigator.userAgent);
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+            const isMobile = /Mobi|Android/i.test(navigator.userAgent);
+            const hasWebXR = 'xr' in navigator;
+            
+            info.innerHTML = `
+                <strong>Device Info:</strong><br>
+                📱 Is Mobile: ${isMobile}<br>
+                🤖 Is Android: ${isAndroid}<br>
+                🍎 Is iOS: ${isIOS}<br>
+                🥽 WebXR Support: ${hasWebXR}<br>
+                🌐 User Agent: ${navigator.userAgent.substring(0, 80)}...
+            `;
+            
+            if (isAndroid || isIOS) {
+                info.className = 'status success';
+            } else {
+                info.className = 'status error';
+                info.innerHTML += '<br>⚠️ AR works best on mobile devices';
+            }
+        }
+
+        // Test file accessibility
+        async function testFileAccess() {
+            const status = document.getElementById('file-status');
+            const files = ['/sofa.glb', '/old_wooden_chair.glb', '/wooden_tablechair__low-poly__game-ready.glb'];
+            
+            for (const file of files) {
+                try {
+                    const response = await fetch(file, { method: 'HEAD' });
+                    if (response.ok) {
+                        status.innerHTML += `<br>✅ ${file} - Accessible (${response.headers.get('content-length')} bytes)`;
+                        status.className = 'status success';
+                    } else {
+                        status.innerHTML += `<br>❌ ${file} - Error ${response.status}`;
+                        status.className = 'status error';
+                    }
+                } catch (error) {
+                    status.innerHTML += `<br>❌ ${file} - Network error: ${error.message}`;
+                    status.className = 'status error';
+                }
+            }
+        }
+
+        // Model loading handlers
+        function setupModelHandlers() {
+            const models = [
+                { id: 'sofa-model', statusId: 'sofa-status', name: 'Sofa' },
+                { id: 'chair-model', statusId: 'chair-status', name: 'Chair' },
+                { id: 'table-model', statusId: 'table-status', name: 'Table' }
+            ];
+
+            models.forEach(({ id, statusId, name }) => {
+                const model = document.getElementById(id);
+                const status = document.getElementById(statusId);
+
+                model.addEventListener('load', () => {
+                    status.innerHTML = `✅ ${name} model loaded successfully! AR should work.`;
+                    status.className = 'status success';
+                });
+
+                model.addEventListener('error', (event) => {
+                    status.innerHTML = `❌ ${name} model failed to load: ${event.detail || 'Unknown error'}`;
+                    status.className = 'status error';
+                });
+
+                model.addEventListener('ar-status', (event) => {
+                    status.innerHTML += `<br>📱 AR Status: ${event.detail}`;
+                });
+            });
+        }
+
+        // Manual AR launch functions
+        function launchSofaAR() {
+            const status = document.getElementById('manual-status');
+            const modelUrl = `${window.location.origin}/sofa.glb`;
+            const arUrl = `intent://arvr.google.com/scene-viewer/1.0?file=${encodeURIComponent(modelUrl)}&mode=ar_preferred#Intent;scheme=https;package=com.google.android.googlequicksearchbox;action=android.intent.action.VIEW;S.browser_fallback_url=${encodeURIComponent(window.location.href)};end;`;
+            
+            status.innerHTML = `🚀 Launching AR for Android...<br>URL: ${arUrl.substring(0, 100)}...`;
+            status.className = 'status info';
+            
+            try {
+                window.location.href = arUrl;
+                setTimeout(() => {
+                    status.innerHTML += '<br>If AR didn\'t launch, you may need Google app installed.';
+                }, 2000);
+            } catch (error) {
+                status.innerHTML = `❌ Error launching AR: ${error.message}`;
+                status.className = 'status error';
+            }
+        }
+
+        function launchSofaARiOS() {
+            const status = document.getElementById('manual-status');
+            const modelUrl = `${window.location.origin}/sofa.glb`;
+            
+            status.innerHTML = `🍎 Creating iOS AR link...`;
+            status.className = 'status info';
+            
+            try {
+                const link = document.createElement('a');
+                link.href = modelUrl;
+                link.rel = 'ar';
+                link.download = 'sofa.glb';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                status.innerHTML += '<br>✅ iOS AR Quick Look should have launched!';
+                status.className = 'status success';
+            } catch (error) {
+                status.innerHTML = `❌ Error launching iOS AR: ${error.message}`;
+                status.className = 'status error';
+            }
+        }
+
+        // Initialize tests
+        document.addEventListener('DOMContentLoaded', () => {
+            detectDevice();
+            testFileAccess();
+            setupModelHandlers();
+        });
+    </script>
+</body>
+</html>

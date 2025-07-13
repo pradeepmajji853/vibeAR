@@ -490,6 +490,7 @@ The natural lighting here would beautifully showcase these additions!`;
             <div className="flex-1">
               <model-viewer
                 src={selectedFurniture.downloadUrl?.startsWith('http') ? selectedFurniture.downloadUrl : `${window.location.origin}${selectedFurniture.downloadUrl}`}
+                ios-src={selectedFurniture.downloadUrl?.startsWith('http') ? selectedFurniture.downloadUrl : `${window.location.origin}${selectedFurniture.downloadUrl}`}
                 alt={selectedFurniture.name}
                 ar
                 ar-modes="webxr scene-viewer quick-look"
@@ -497,10 +498,11 @@ The natural lighting here would beautifully showcase these additions!`;
                 touch-action="pan-y"
                 auto-rotate
                 ar-scale="auto"
+                loading="lazy"
                 style={{ width: '100%', height: '100%' }}
               >
-                <div slot="ar-button" className="absolute bottom-20 left-1/2 transform -translate-x-1/2 bg-white text-black px-6 py-3 rounded-full font-medium">
-                  View in AR
+                <div slot="ar-button" className="absolute bottom-20 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-green-500 to-emerald-500 text-white px-8 py-4 rounded-full font-medium shadow-lg hover:shadow-xl transition-all">
+                  📱 View in AR
                 </div>
               </model-viewer>
             </div>
@@ -510,6 +512,44 @@ The natural lighting here would beautifully showcase these additions!`;
               <div className="text-center text-white mb-4">
                 <p className="text-sm opacity-80">Point your camera at a flat surface</p>
                 <p className="text-xs opacity-60">Tap "View in AR" to place furniture</p>
+              </div>
+              
+              {/* Fallback AR Buttons */}
+              <div className="flex gap-2 mb-3">
+                <button
+                  onClick={() => {
+                    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+                    const isAndroid = /Android/.test(navigator.userAgent);
+                    const modelUrl = selectedFurniture.downloadUrl?.startsWith('http') ? 
+                      selectedFurniture.downloadUrl : 
+                      `${window.location.origin}${selectedFurniture.downloadUrl}`;
+                    
+                    if (isAndroid) {
+                      const arUrl = `intent://arvr.google.com/scene-viewer/1.0?file=${encodeURIComponent(modelUrl)}&mode=ar_preferred#Intent;scheme=https;package=com.google.android.googlequicksearchbox;action=android.intent.action.VIEW;S.browser_fallback_url=${encodeURIComponent(window.location.href)};end;`;
+                      window.location.href = arUrl;
+                    } else if (isIOS) {
+                      const link = document.createElement('a');
+                      link.href = modelUrl;
+                      link.rel = 'ar';
+                      link.download = selectedFurniture.name + '.glb';
+                      link.click();
+                    } else {
+                      alert('AR requires a mobile device (Android or iOS)');
+                    }
+                  }}
+                  className="flex-1 bg-gradient-to-r from-orange-500 to-red-500 text-white py-2 px-3 rounded-lg text-sm font-medium"
+                >
+                  🚀 Direct AR
+                </button>
+                <button
+                  onClick={() => {
+                    // Open debug page for troubleshooting
+                    window.open('/ar-issue-detector.html', '_blank');
+                  }}
+                  className="bg-gray-600 text-white py-2 px-3 rounded-lg text-sm"
+                >
+                  🔧 Debug
+                </button>
               </div>
               
               <div className="flex gap-3">
