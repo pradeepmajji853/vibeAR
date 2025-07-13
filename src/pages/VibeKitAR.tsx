@@ -8,11 +8,13 @@ import {
   Share2, 
   Home,
   Scan,
-  ArrowUp,
   X,
-  ChevronDown
+  ChevronDown,
+  Camera,
+  ExternalLink,
+  Eye
 } from 'lucide-react';
-import { analyzeRoomWithImage } from '../utils/gemini';
+import { analyzeRoomWithImage, generateNLPFurnitureSearch } from '../utils/gemini';
 import { searchFurnitureEnhanced } from '../utils/sketchfab';
 import Local3DViewer from '../components/Local3DViewer';
 
@@ -35,7 +37,7 @@ interface FurnitureItem {
 
 const VibeKitAR = () => {
   const navigate = useNavigate();
-  const [step, setStep] = useState<'camera' | 'scanned' | 'suggestions' | 'placement'>('camera');
+  const [step, setStep] = useState<'permission' | 'camera' | 'scanned' | 'suggestions' | 'placement' | 'ar-view'>('permission');
   const [searchQuery, setSearchQuery] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [isCameraActive, setIsCameraActive] = useState(false);
@@ -55,36 +57,102 @@ const VibeKitAR = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  // Initialize camera on component mount
-  useEffect(() => {
-    const initCamera = async () => {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            facingMode: 'environment',
-            width: { ideal: 1920 },
-            height: { ideal: 1080 }
-          }
-        });
-        
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          setIsCameraActive(true);
-          setCameraError(null);
-        }
-      } catch (error) {
-        console.error('Error accessing camera:', error);
-        setCameraError('Camera access denied or not available');
-        setIsCameraActive(false);
+  // Request camera permission first (especially important for mobile)
+  const requestCameraPermission = async () => {
+    console.log('🎥 Requesting camera permission...');
+    
+    try {
+      // Check if mediaDevices is available
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        setCameraError('Camera not supported on this device or connection must be HTTPS');
+        console.error('❌ MediaDevices not available');
+        return;
       }
-    };
 
-    initCamera();
+      // Check if we're on mobile
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      console.log('📱 Mobile device detected:', isMobile);
+      
+      if (isMobile) {
+        // For mobile, show a user-friendly permission request first
+        const confirmPermission = window.confirm(
+          "VibeKit needs camera access to scan your room and suggest furniture. Allow camera access?"
+        );
+        
+        if (!confirmPermission) {
+          setCameraError('Camera permission is required to use VibeKit AR features');
+          console.log('❌ User declined camera permission');
+          return;
+        }
+      }
 
+      console.log('🔄 Attempting to get camera stream...');
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: 'environment',
+          width: { ideal: 1920 },
+          height: { ideal: 1080 }
+        }
+      });
+      
+      console.log('✅ Camera stream obtained successfully');
+      
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        setIsCameraActive(true);
+        setCameraError(null);
+        setStep('camera');
+        console.log('✅ Camera activated and step changed to camera');
+      } else {
+        console.error('❌ Video ref is null');
+        setCameraError('Video element not available');
+      }
+    } catch (error) {
+      console.error('❌ Error accessing camera:', error);
+      if (error instanceof Error) {
+        console.log('Error name:', error.name);
+        console.log('Error message:', error.message);
+        
+        if (error.name === 'NotAllowedError') {
+          setCameraError('Camera access denied. Please allow camera access and try again.');
+        } else if (error.name === 'NotFoundError') {
+          setCameraError('No camera found on this device.');
+        } else if (error.name === 'NotSecureError' || error.message.includes('secure')) {
+          setCameraError('Camera requires HTTPS connection. Please access via HTTPS.');
+        } else {
+          setCameraError(`Camera access failed: ${error.message}`);
+        }
+      } else {
+        setCameraError('Camera access failed. Please try again.');
+      }
+      setIsCameraActive(false);
+    }
+  };
+
+  // Initialize component
+  useEffect(() => {
+    console.log('🚀 VibeKit AR component mounted, step:', step);
+    console.log('🌐 Current protocol:', window.location.protocol);
+    console.log('🔒 Secure context:', window.isSecureContext);
+    
+    // Check environment and auto-start for desktop testing
+    const isDesktop = !(/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
+    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    
+    if (isDesktop && isLocalhost && window.isSecureContext) {
+      console.log('🖥️ Desktop + Localhost + HTTPS detected, auto-starting camera...');
+      setTimeout(() => {
+        requestCameraPermission();
+      }, 500);
+    } else {
+      console.log('📱 Mobile or remote access detected, waiting for user permission');
+    }
+    
     return () => {
       if (videoRef.current?.srcObject) {
         const stream = videoRef.current.srcObject as MediaStream;
         stream.getTracks().forEach(track => track.stop());
+        console.log('🛑 Camera stream stopped');
       }
     };
   }, []);
@@ -122,37 +190,60 @@ const VibeKitAR = () => {
     }
   };
 
-  // Enhanced AI query handling with better responses
+  // Enhanced AI query handling with better NLP understanding
   const handleAIQuery = async (query: string) => {
     if (!scannedImage) return;
 
     setIsAnalyzing(true);
     try {
-      // Analyze the room with AI
+      // First, analyze the room with AI
       const analysis = await analyzeRoomWithImage(scannedImage, query);
       setRoomAnalysis(analysis);
       
-      // Generate contextual AI response
+      // Then, use Gemini to understand the NLP query and generate furniture keywords
+      const furnitureKeywords = await generateNLPFurnitureSearch(query, analysis);
+      
+      // Generate contextual AI response based on NLP understanding
       let response = '';
-      if (query.toLowerCase().includes('empty') || query.toLowerCase().includes('add')) {
-        response = `I can see this ${analysis.dimensions.estimatedSize} space! Based on the ${analysis.theme} style and ${analysis.lighting}, I recommend adding:
+      const queryLower = query.toLowerCase();
+      
+      if (queryLower.includes('cozy') || queryLower.includes('comfortable')) {
+        response = `I understand you want to make this space more cozy! Based on your ${analysis.theme} style room, I recommend:
 
-• A ${analysis.colorPalette.includes('warm') ? 'warm wood' : 'modern'} chair in the ${analysis.dimensions.availableSpace[0]}
-• A coffee table that complements the ${analysis.colorPalette[0]} tones
-• Some decorative elements to enhance the ${analysis.style} aesthetic
+• Soft seating like an upholstered armchair or loveseat
+• Warm lighting with table lamps or floor lamps
+• Textured elements like throw pillows or a soft rug
+• Natural materials in ${analysis.colorPalette[0]} tones
 
-The natural lighting here would work beautifully with these suggestions!`;
-      } else if (query.toLowerCase().includes('color')) {
-        response = `Your room has a lovely ${analysis.colorPalette.join(', ')} palette! I'd suggest furniture in complementary tones that won't clash with your existing ${analysis.theme} style.`;
+The ${analysis.lighting} in your space would work beautifully with these cozy additions!`;
+      } else if (queryLower.includes('modern') || queryLower.includes('sleek')) {
+        response = `Perfect! I can see you're going for a modern aesthetic. For your ${analysis.dimensions.estimatedSize} space:
+
+• Clean-lined furniture in neutral colors
+• Minimalist pieces that don't clutter the space
+• Contemporary materials like metal and glass
+• Geometric shapes that complement your ${analysis.theme} style
+
+These suggestions will enhance the modern vibe while working with your existing ${analysis.colorPalette.join(', ')} color scheme.`;
+      } else if (queryLower.includes('empty') || queryLower.includes('add') || queryLower.includes('furniture')) {
+        response = `I can see this ${analysis.dimensions.estimatedSize} space has great potential! Based on the ${analysis.theme} style and ${analysis.lighting}, here's what would work perfectly:
+
+• A ${analysis.furnitureKeywords.includes('chair') ? 'stylish accent chair' : 'comfortable seating option'} in the ${analysis.dimensions.availableSpace[0]}
+• A functional table that complements the ${analysis.colorPalette[0]} tones
+• Decorative elements to enhance the ${analysis.style} aesthetic
+• Storage solutions that match your existing style
+
+The natural lighting here would beautifully showcase these additions!`;
       } else {
-        response = `Based on your ${analysis.theme} ${analysis.style} space, here are some personalized suggestions that would enhance the room's flow and functionality.`;
+        response = `Based on your "${query}" request and analyzing your ${analysis.theme} ${analysis.style} space, I've found furniture pieces that would perfectly suit your needs and complement your room's existing ${analysis.colorPalette.join(', ')} palette.`;
       }
       
       setAiResponse(response);
       
-      // Search for furniture with enhanced criteria
+      // Search for furniture with enhanced NLP-based criteria
       setLoadingFurniture(true);
       const furniture = await searchFurnitureEnhanced([
+        ...furnitureKeywords,
         ...analysis.furnitureKeywords,
         analysis.theme.toLowerCase(),
         analysis.style.toLowerCase(),
@@ -220,32 +311,15 @@ The natural lighting here would work beautifully with these suggestions!`;
     console.log('Placed furniture:', furniture.name, 'Total pieces:', placedFurniture.length + 1);
   };
 
-  // Enhanced AR placement with better user feedback
+  // Enhanced AR placement with Google Model Viewer
   const handleARPlacement = (furniture: FurnitureItem) => {
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
     const isAndroid = /Android/.test(navigator.userAgent);
     
     if (furniture.downloadUrl) {
-      const fullUrl = `${window.location.origin}${furniture.downloadUrl}`;
-      
-      if (isIOS) {
-        // iOS AR Quick Look
-        const link = document.createElement('a');
-        link.href = fullUrl;
-        link.rel = 'ar';
-        link.setAttribute('download', furniture.name);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        
-        // Show success message
-        setTimeout(() => {
-          alert(`${furniture.name} should now appear in AR! Tap to place it in your space.`);
-        }, 1000);
-      } else if (isAndroid) {
-        // Android Scene Viewer
-        const arUrl = `intent://arvr.google.com/scene-viewer/1.0?file=${encodeURIComponent(fullUrl)}&mode=ar_preferred#Intent;scheme=https;package=com.google.android.googlequicksearchbox;action=android.intent.action.VIEW;S.browser_fallback_url=${encodeURIComponent(window.location.href)};end;`;
-        window.location.href = arUrl;
+      if (isIOS || isAndroid) {
+        // Open AR view with model-viewer
+        setStep('ar-view');
       } else {
         // Desktop fallback with instructions
         alert(`To view ${furniture.name} in AR:\n\n1. Open this page on your mobile device\n2. Tap "Place in AR" again\n3. Point your camera at a flat surface\n4. Tap to place the furniture\n\nFor now, you can preview the 3D model below.`);
@@ -253,6 +327,13 @@ The natural lighting here would work beautifully with these suggestions!`;
     } else {
       alert('This furniture model is not available for AR viewing. Please try another piece.');
     }
+  };
+
+  // Function to redirect to furniture website
+  const handleViewMore = () => {
+    // You can customize this URL to redirect to your furniture catalog website
+    const furnitureWebsiteUrl = 'https://www.wayfair.com/furniture/'; // Example furniture website
+    window.open(furnitureWebsiteUrl, '_blank');
   };
 
   // Add microphone functionality for voice input
@@ -331,6 +412,126 @@ The natural lighting here would work beautifully with these suggestions!`;
 
   return (
     <div className="min-h-screen relative overflow-hidden bg-black">
+      {/* Camera Permission Screen */}
+      {step === 'permission' && (
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-600 to-purple-700 flex items-center justify-center">
+          <div className="text-center text-white p-8 max-w-md mx-auto">
+            <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Camera className="w-10 h-10 text-white" />
+            </div>
+            <h1 className="text-2xl font-bold mb-4">Welcome to VibeKit AR</h1>
+            <p className="text-white/90 mb-2">Transform your space with AI-powered furniture suggestions</p>
+            <p className="text-white/80 text-sm mb-8">We need camera access to scan your room and provide personalized recommendations</p>
+            
+            {/* Debug info */}
+            <div className="mb-4 text-xs text-white/60 bg-black/20 rounded-lg p-3">
+              <p>🌐 Protocol: {window.location.protocol}</p>
+              <p>📱 Device: {/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ? 'Mobile' : 'Desktop'}</p>
+              <p>🔒 Secure: {window.isSecureContext ? '✅ Yes' : '❌ No'}</p>
+              <p>📹 MediaDevices: {navigator.mediaDevices ? '✅ Available' : '❌ Not Available'}</p>
+              <p>🎥 getUserMedia: {(navigator.mediaDevices && typeof navigator.mediaDevices.getUserMedia === 'function') ? '✅ Available' : '❌ Not Available'}</p>
+              <p>🏠 Network IP: 192.168.194.46:5173</p>
+            </div>
+            
+            <button
+              onClick={requestCameraPermission}
+              className="w-full bg-white text-blue-600 py-4 rounded-2xl font-semibold text-lg mb-4 hover:bg-blue-50 transition-colors"
+            >
+              Allow Camera Access
+            </button>
+            
+            {cameraError && (
+              <div className="bg-red-500/20 border border-red-400 rounded-xl p-4 mb-4">
+                <p className="text-red-200 text-sm">{cameraError}</p>
+                <button
+                  onClick={requestCameraPermission}
+                  className="mt-2 text-red-200 underline text-sm"
+                >
+                  Try Again
+                </button>
+              </div>
+            )}
+            
+            <button
+              onClick={() => navigate('/')}
+              className="text-white/70 text-sm underline"
+            >
+              Back to Home
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* AR Viewer Screen */}
+      {step === 'ar-view' && selectedFurniture && (
+        <div className="absolute inset-0 bg-black">
+          <div className="h-full flex flex-col">
+            {/* AR Header */}
+            <div className="p-4 bg-gradient-to-b from-black/80 to-transparent absolute top-0 left-0 right-0 z-10">
+              <div className="flex items-center justify-between">
+                <button
+                  onClick={() => setStep('placement')}
+                  className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center"
+                >
+                  <X className="w-5 h-5 text-white" />
+                </button>
+                <h2 className="text-white font-semibold">{selectedFurniture.name}</h2>
+                <button
+                  onClick={handleViewMore}
+                  className="bg-blue-500 text-white px-4 py-2 rounded-full text-sm flex items-center gap-2"
+                >
+                  <Eye className="w-4 h-4" />
+                  View More
+                </button>
+              </div>
+            </div>
+
+            {/* Model Viewer for AR */}
+            <div className="flex-1">
+              <model-viewer
+                src={selectedFurniture.downloadUrl?.startsWith('http') ? selectedFurniture.downloadUrl : `${window.location.origin}${selectedFurniture.downloadUrl}`}
+                alt={selectedFurniture.name}
+                ar
+                ar-modes="webxr scene-viewer quick-look"
+                camera-controls
+                touch-action="pan-y"
+                auto-rotate
+                ar-scale="auto"
+                style={{ width: '100%', height: '100%' }}
+              >
+                <div slot="ar-button" className="absolute bottom-20 left-1/2 transform -translate-x-1/2 bg-white text-black px-6 py-3 rounded-full font-medium">
+                  View in AR
+                </div>
+              </model-viewer>
+            </div>
+
+            {/* AR Controls */}
+            <div className="p-4 bg-gradient-to-t from-black/80 to-transparent absolute bottom-0 left-0 right-0">
+              <div className="text-center text-white mb-4">
+                <p className="text-sm opacity-80">Point your camera at a flat surface</p>
+                <p className="text-xs opacity-60">Tap "View in AR" to place furniture</p>
+              </div>
+              
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setStep('placement')}
+                  className="flex-1 bg-white/20 text-white py-3 rounded-xl"
+                >
+                  Back
+                </button>
+                <button
+                  onClick={handleViewMore}
+                  className="flex-1 bg-blue-500 text-white py-3 rounded-xl flex items-center justify-center gap-2"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  View More Furniture
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Camera/Image Background */}
       <div className="absolute inset-0">
         {step === 'camera' && isCameraActive ? (
@@ -341,7 +542,7 @@ The natural lighting here would work beautifully with these suggestions!`;
             muted
             className="w-full h-full object-cover"
           />
-        ) : step !== 'camera' && scannedImage ? (
+        ) : step !== 'camera' && step !== 'permission' && step !== 'ar-view' && scannedImage ? (
           <img 
             src={scannedImage} 
             alt="Scanned room" 
@@ -390,15 +591,14 @@ The natural lighting here would work beautifully with these suggestions!`;
               </button>
               <h1 className="text-white text-lg font-semibold">vibeKit</h1>
             </div>
-            <button
-              onClick={() => setStep('camera')}
-              className="text-white/80 text-sm bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full"
-            >
-              Room Analysis
-            </button>
-            <button className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
-              <ArrowUp className="w-4 h-4 text-white" />
-            </button>
+            {step === 'camera' && (
+              <button
+                onClick={() => requestCameraPermission()}
+                className="text-white/80 text-sm bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full"
+              >
+                Refresh Camera
+              </button>
+            )}
           </div>
 
           {/* Search Bar - only show in camera mode */}
@@ -574,7 +774,7 @@ The natural lighting here would work beautifully with these suggestions!`;
                 <p className="text-white/80 text-sm leading-relaxed">{whyItLooksGood}</p>
               </div>
               
-              <div className="flex gap-3">
+              <div className="flex gap-3 mb-4">
                 <button
                   onClick={() => handleARPlacement(selectedFurniture)}
                   className="flex-1 bg-gradient-to-r from-green-500 to-emerald-500 text-white px-4 py-3 rounded-xl text-sm font-medium flex items-center justify-center gap-2 hover:from-green-600 hover:to-emerald-600 transition-colors"
@@ -589,6 +789,15 @@ The natural lighting here would work beautifully with these suggestions!`;
                   Back
                 </button>
               </div>
+              
+              {/* View More Button */}
+              <button
+                onClick={handleViewMore}
+                className="w-full bg-gradient-to-r from-blue-500 to-purple-500 text-white px-4 py-3 rounded-xl text-sm font-medium flex items-center justify-center gap-2 hover:from-blue-600 hover:to-purple-600 transition-colors"
+              >
+                <ExternalLink className="w-4 h-4" />
+                View More Furniture
+              </button>
             </div>
 
             {/* AR Simulation Overlay */}

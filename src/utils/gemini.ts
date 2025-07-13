@@ -253,3 +253,93 @@ export const analyzeRoomImage = async (imageDescription: string): Promise<string
     throw error;
   }
 };
+
+// Enhanced NLP furniture search that understands natural language queries
+export const generateNLPFurnitureSearch = async (userQuery: string, roomAnalysis?: RoomAnalysis): Promise<string[]> => {
+  try {
+    const response = await fetch(GEMINI_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        contents: [
+          {
+            parts: [
+              {
+                text: `You are an expert furniture search assistant. Analyze this user query and generate specific furniture search keywords.
+
+User Query: "${userQuery}"
+${roomAnalysis ? `Room Context: ${roomAnalysis.theme} style, ${roomAnalysis.colorPalette.join(', ')} colors, ${roomAnalysis.dimensions.estimatedSize}` : ''}
+
+Based on the query, provide 5-8 specific furniture search keywords that would best match what the user is looking for. Consider:
+
+1. Intent Analysis:
+   - If they want "cozy" → chairs, sofas, lamps, cushions, rugs
+   - If they want "modern" → sleek, contemporary, minimalist furniture
+   - If they want "storage" → shelves, cabinets, organizers
+   - If they mention specific rooms → bedroom, living room, kitchen furniture
+   - If they want "functional" → desks, tables, storage solutions
+
+2. Style Matching:
+   - Match the room's existing style (${roomAnalysis?.theme || 'modern'})
+   - Consider color compatibility
+   - Think about scale and proportions
+
+3. Specific Items:
+   - Always include the main furniture category
+   - Add style descriptors
+   - Include material keywords if relevant
+
+Return ONLY a comma-separated list of 5-8 keywords, no explanations.
+
+Examples:
+Query: "make this cozy" → "armchair, soft lighting, throw pillows, warm lamp, cozy sofa, comfortable seating"
+Query: "modern furniture here" → "contemporary chair, sleek table, modern sofa, minimalist lamp, geometric furniture"
+Query: "storage solutions" → "bookshelf, storage cabinet, organizer, modern shelf, functional furniture"`
+              }
+            ]
+          }
+        ]
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    
+    if (data.candidates && data.candidates[0] && data.candidates[0].content) {
+      const keywords = data.candidates[0].content.parts[0].text
+        .split(',')
+        .map((keyword: string) => keyword.trim())
+        .filter((keyword: string) => keyword.length > 0)
+        .slice(0, 8); // Limit to 8 keywords
+      
+      return keywords;
+    } else {
+      throw new Error('Invalid response format');
+    }
+  } catch (error) {
+    console.error('Error generating NLP furniture search:', error);
+    
+    // Fallback keyword generation based on simple text analysis
+    const queryLower = userQuery.toLowerCase();
+    const fallbackKeywords = [];
+    
+    if (queryLower.includes('cozy')) {
+      fallbackKeywords.push('armchair', 'soft lighting', 'comfortable sofa', 'warm lamp');
+    } else if (queryLower.includes('modern')) {
+      fallbackKeywords.push('contemporary chair', 'sleek table', 'modern sofa', 'minimalist');
+    } else if (queryLower.includes('storage')) {
+      fallbackKeywords.push('shelf', 'cabinet', 'storage', 'organizer');
+    } else if (queryLower.includes('empty') || queryLower.includes('furniture')) {
+      fallbackKeywords.push('chair', 'table', 'sofa', 'lamp', 'furniture');
+    } else {
+      fallbackKeywords.push('furniture', 'chair', 'table', 'modern');
+    }
+    
+    return fallbackKeywords;
+  }
+};

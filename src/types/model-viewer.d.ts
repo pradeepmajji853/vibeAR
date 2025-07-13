@@ -8,6 +8,8 @@ declare namespace JSX {
       'camera-controls'?: boolean;
       ar?: boolean;
       'ar-modes'?: string;
+      'ar-scale'?: string;
+      'touch-action'?: string;
       'environment-image'?: string;
       'shadow-intensity'?: string;
       className?: string;
@@ -16,6 +18,7 @@ declare namespace JSX {
       style?: React.CSSProperties;
       onLoad?: () => void;
       onError?: () => void;
+      children?: React.ReactNode;
     };
   }
 }
