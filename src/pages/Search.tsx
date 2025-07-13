@@ -27,6 +27,7 @@ const Search = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [hasSearched, setHasSearched] = useState<boolean>(false);
 
   // Featured local models from assets folder
   const featuredModels = [
@@ -116,7 +117,8 @@ const Search = () => {
 
   // Load initial furniture items
   useEffect(() => {
-    loadFurnitureItems('furniture');
+    // Don't load initial items - let users browse featured or search
+    setHasSearched(false);
   }, []);
 
   const loadFurnitureItems = async (query: string) => {
@@ -135,12 +137,17 @@ const Search = () => {
 
   const handleSearch = async (query: string) => {
     if (query.trim()) {
+      setHasSearched(true);
       await loadFurnitureItems(query);
+    } else {
+      setHasSearched(false);
+      setFurnitureItems([]);
     }
   };
 
   const handleCategoryChange = async (category: any) => {
     setSelectedCategory(category.id);
+    setHasSearched(true);
     await loadFurnitureItems(category.query);
   };
 
@@ -196,7 +203,15 @@ const Search = () => {
         </div>
         <SearchBar
           value={searchQuery}
-          onChange={setSearchQuery}
+          onChange={(value) => {
+            setSearchQuery(value);
+            // If user clears the search, go back to featured
+            if (!value.trim()) {
+              setHasSearched(false);
+              setFurnitureItems([]);
+              setSelectedCategory('all');
+            }
+          }}
           onSearch={handleSearch}
           placeholder="Search chairs, tables, lighting..."
         />
@@ -221,75 +236,111 @@ const Search = () => {
         </div>
       </div>
 
-      {/* Featured Local Models Section */}
-      <div className="mb-6">
-        <h2 className="text-xl font-bold text-white mb-4">Featured Collection</h2>
-        <div className="grid grid-cols-2 gap-4">
-          {featuredModels.slice(0, 4).map((item) => (
-            <div key={item.id} className="bg-gray-800 rounded-xl shadow-sm border border-gray-700 overflow-hidden hover:shadow-lg transition-shadow">
-              <div className="aspect-square relative">
-                <img
-                  src={item.thumbnail}
-                  alt={item.name}
-                  className="w-full h-full object-cover"
-                  onError={(e: any) => {
-                    e.target.src = 'https://images.pexels.com/photos/586738/pexels-photo-586738.jpeg?auto=compress&cs=tinysrgb&w=300';
-                  }}
-                />
-                <button
-                  onClick={() => handleViewItem(item)}
-                  className="absolute top-2 right-2 w-8 h-8 bg-black/60 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg hover:bg-black/80 transition-colors"
-                >
-                  <Heart className="w-4 h-4 text-gray-300" />
-                </button>
-                <div className="absolute bottom-2 left-2 bg-violet-600 text-white px-2 py-1 rounded-full text-xs font-medium">
-                  Featured
-                </div>
-              </div>
-              
-              <div className="p-3">
-                <h3 className="font-semibold text-white text-sm mb-1 truncate" title={item.name}>
-                  {item.name}
-                </h3>
-                <p className="text-xs text-gray-400 mb-1">{item.category}</p>
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="flex items-center gap-1">
-                    <ThumbsUp className="w-3 h-3 text-gray-500" />
-                    <span className="text-xs text-gray-500">{item.likeCount}</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <User className="w-3 h-3 text-gray-500" />
-                    <span className="text-xs text-gray-500 truncate max-w-16" title={item.author}>
-                      {item.author}
-                    </span>
+      {/* Featured Local Models Section - Only show when not searching */}
+      {!hasSearched && !loading && (
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold text-white">Featured Collection</h2>
+            <span className="text-sm text-gray-400">Curated high-quality models</span>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            {featuredModels.slice(0, 6).map((item) => (
+              <div key={item.id} className="bg-gray-800 rounded-xl shadow-sm border border-gray-700 overflow-hidden hover:shadow-lg transition-shadow">
+                <div className="aspect-square relative">
+                  <img
+                    src={item.thumbnail}
+                    alt={item.name}
+                    className="w-full h-full object-cover"
+                    onError={(e: any) => {
+                      e.target.src = 'https://images.pexels.com/photos/586738/pexels-photo-586738.jpeg?auto=compress&cs=tinysrgb&w=300';
+                    }}
+                  />
+                  <button
+                    onClick={() => handleViewItem(item)}
+                    className="absolute top-2 right-2 w-8 h-8 bg-black/60 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg hover:bg-black/80 transition-colors"
+                  >
+                    <Heart className="w-4 h-4 text-gray-300" />
+                  </button>
+                  <div className="absolute bottom-2 left-2 bg-violet-600 text-white px-2 py-1 rounded-full text-xs font-medium">
+                    Featured
                   </div>
                 </div>
                 
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => handleViewItem(item)}
-                    className="flex-1 bg-gray-700 text-gray-300 py-2 px-3 rounded-lg text-sm font-medium hover:bg-gray-600 transition-colors flex items-center justify-center gap-1"
-                  >
-                    <Eye className="w-3 h-3" />
-                    View
-                  </button>
-                  <button
-                    onClick={() => handleARView(item)}
-                    className="flex-1 bg-violet-600 text-white py-2 px-3 rounded-lg text-sm font-medium hover:bg-violet-700 transition-colors flex items-center justify-center gap-1"
-                  >
-                    <ExternalLink className="w-3 h-3" />
-                    AR
-                  </button>
+                <div className="p-3">
+                  <h3 className="font-semibold text-white text-sm mb-1 truncate" title={item.name}>
+                    {item.name}
+                  </h3>
+                  <p className="text-xs text-gray-400 mb-1">{item.category}</p>
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="flex items-center gap-1">
+                      <ThumbsUp className="w-3 h-3 text-gray-500" />
+                      <span className="text-xs text-gray-500">{item.likeCount}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <User className="w-3 h-3 text-gray-500" />
+                      <span className="text-xs text-gray-500 truncate max-w-16" title={item.author}>
+                        {item.author}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleViewItem(item)}
+                      className="flex-1 bg-gray-700 text-gray-300 py-2 px-3 rounded-lg text-sm font-medium hover:bg-gray-600 transition-colors flex items-center justify-center gap-1"
+                    >
+                      <Eye className="w-3 h-3" />
+                      View
+                    </button>
+                    <button
+                      onClick={() => handleARView(item)}
+                      className="flex-1 bg-violet-600 text-white py-2 px-3 rounded-lg text-sm font-medium hover:bg-violet-700 transition-colors flex items-center justify-center gap-1"
+                    >
+                      <ExternalLink className="w-3 h-3" />
+                      AR
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
+          
+          {/* Browse Categories CTA */}
+          <div className="mt-6 text-center">
+            <p className="text-gray-400 text-sm mb-3">Looking for something specific?</p>
+            <p className="text-gray-300 text-sm">Use the categories above or search to explore thousands of 3D models</p>
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* Search Results Header */}
-      {furnitureItems.length > 0 && (
-        <h2 className="text-lg font-bold text-white mb-4">Search Results</h2>
+      {/* Back to Featured Button - Show when searching */}
+      {hasSearched && (
+        <div className="mb-4">
+          <button
+            onClick={() => {
+              setHasSearched(false);
+              setFurnitureItems([]);
+              setSearchQuery('');
+              setSelectedCategory('all');
+            }}
+            className="text-violet-400 hover:text-violet-300 text-sm flex items-center gap-1 transition-colors"
+          >
+            ← Back to Featured Collection
+          </button>
+        </div>
+      )}
+
+      {/* Search Results Header - Only show when searching */}
+      {hasSearched && furnitureItems.length > 0 && !loading && (
+        <div className="mb-4">
+          <h2 className="text-xl font-bold text-white mb-2">
+            {selectedCategory === 'all' ? 'Search Results' : `${categories.find(c => c.id === selectedCategory)?.label} Furniture`}
+          </h2>
+          <p className="text-gray-400 text-sm">
+            {furnitureItems.length} item{furnitureItems.length !== 1 ? 's' : ''} found
+            {searchQuery && ` for "${searchQuery}"`}
+          </p>
+        </div>
       )}
 
       {/* Loading State */}
@@ -313,17 +364,8 @@ const Search = () => {
         </div>
       )}
 
-      {/* Results Count */}
-      {!loading && furnitureItems.length > 0 && (
-        <div className="mb-4">
-          <p className="text-gray-400 text-sm">
-            {furnitureItems.length} item{furnitureItems.length !== 1 ? 's' : ''} found
-          </p>
-        </div>
-      )}
-
-      {/* Furniture Grid */}
-      {!loading && furnitureItems.length > 0 && (
+      {/* Furniture Grid - Only show when searching */}
+      {hasSearched && !loading && furnitureItems.length > 0 && (
         <div className="grid grid-cols-2 gap-4 mb-6">
           {furnitureItems.map((item) => (
             <div key={item.id} className="bg-gray-800 rounded-xl shadow-sm border border-gray-700 overflow-hidden hover:shadow-lg transition-shadow">
@@ -390,14 +432,27 @@ const Search = () => {
         </div>
       )}
 
-      {/* Empty State */}
-      {!loading && furnitureItems.length === 0 && !error && (
+      {/* Empty State - Only show when searching but no results found */}
+      {hasSearched && !loading && furnitureItems.length === 0 && !error && (
         <div className="text-center py-12">
           <div className="w-16 h-16 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
             <Eye className="w-8 h-8 text-gray-500" />
           </div>
           <h3 className="text-white font-medium mb-2">No furniture found</h3>
-          <p className="text-gray-400 text-sm">Try searching for something else</p>
+          <p className="text-gray-400 text-sm mb-4">
+            {searchQuery ? `No results for "${searchQuery}"` : 'No items in this category'}
+          </p>
+          <button
+            onClick={() => {
+              setHasSearched(false);
+              setFurnitureItems([]);
+              setSearchQuery('');
+              setSelectedCategory('all');
+            }}
+            className="bg-violet-600 text-white px-4 py-2 rounded-lg hover:bg-violet-700 transition-colors"
+          >
+            Browse Featured Collection
+          </button>
         </div>
       )}
 

@@ -1,6 +1,5 @@
-import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Home, Search, Scan, Brain, User, Camera } from 'lucide-react';
+import { Home, Search, User, Camera, Sparkles } from 'lucide-react';
 
 const BottomNav = () => {
   const location = useLocation();
@@ -9,7 +8,7 @@ const BottomNav = () => {
   const navItems = [
     { path: '/', icon: Home, label: 'Home' },
     { path: '/search', icon: Search, label: 'Search' },
-    { path: '/ar-room', icon: Scan, label: 'AR Room' },
+    { path: '/vibekit-ar', icon: Sparkles, label: 'VibeKit' },
     { path: '/ai-analysis', icon: Camera, label: 'AI Analysis' },
     { path: '/profile', icon: User, label: 'Profile' },
   ];

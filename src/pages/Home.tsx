@@ -1,267 +1,203 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Scan, Sparkles, ArrowRight, Play, Brain, Eye, Layers, ChevronDown } from 'lucide-react';
+import { 
+  Camera, 
+  Sparkles, 
+  ArrowRight, 
+  Brain, 
+  Eye, 
+  Scan,
+  Play,
+  ShoppingBag,
+  Star,
+  Home as HomeIcon,
+  Sofa
+} from 'lucide-react';
 
 const Home = () => {
   const navigate = useNavigate();
-  const [scrollY, setScrollY] = useState(0);
-  const heroRef = useRef<HTMLDivElement>(null);
-
-  // Enhanced furniture images for diagonal scrolling
-  const furnitureImages = [
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  
+  // High-quality furniture images with better variety
+  const heroImages = [
     {
-      url: 'https://images.pexels.com/photos/963486/pexels-photo-963486.jpeg?auto=compress&cs=tinysrgb&w=600',
-      title: 'Modern Chair',
-      category: 'Seating'
+      url: 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?auto=format&fit=crop&w=800&q=80',
+      title: 'Modern Living Room',
+      subtitle: 'Scandinavian Design'
     },
     {
-      url: 'https://images.pexels.com/photos/1148955/pexels-photo-1148955.jpeg?auto=compress&cs=tinysrgb&w=600',
-      title: 'Luxury Sofa',
-      category: 'Living Room'
+      url: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=800&q=80',
+      title: 'Minimalist Bedroom',
+      subtitle: 'Contemporary Style'
     },
     {
-      url: 'https://images.pexels.com/photos/271743/pexels-photo-271743.jpeg?auto=compress&cs=tinysrgb&w=600',
-      title: 'Elegant Bed',
-      category: 'Bedroom'
+      url: 'https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?auto=format&fit=crop&w=800&q=80',
+      title: 'Elegant Dining',
+      subtitle: 'Modern Luxury'
     },
     {
-      url: 'https://images.pexels.com/photos/1571460/pexels-photo-1571460.jpeg?auto=compress&cs=tinysrgb&w=600',
-      title: 'Dining Table',
-      category: 'Dining'
-    },
-    {
-      url: 'https://images.pexels.com/photos/707676/pexels-photo-707676.jpeg?auto=compress&cs=tinysrgb&w=600',
-      title: 'Designer Lamp',
-      category: 'Lighting'
-    },
-    {
-      url: 'https://images.pexels.com/photos/1571181/pexels-photo-1571181.jpeg?auto=compress&cs=tinysrgb&w=600',
-      title: 'Modern Shelf',
-      category: 'Storage'
-    },
-    {
-      url: 'https://images.pexels.com/photos/2251247/pexels-photo-2251247.jpeg?auto=compress&cs=tinysrgb&w=600',
-      title: 'Coffee Table',
-      category: 'Living Room'
-    },
-    {
-      url: 'https://images.pexels.com/photos/1571468/pexels-photo-1571468.jpeg?auto=compress&cs=tinysrgb&w=600',
-      title: 'Bar Stool',
-      category: 'Seating'
+      url: 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?auto=format&fit=crop&w=800&q=80',
+      title: 'Smart Kitchen',
+      subtitle: 'Tech-Enabled Living'
     }
   ];
-
-  useEffect(() => {
-    const handleScroll = () => {
-      setScrollY(window.scrollY);
-    };
-
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
 
   const features = [
     {
+      icon: Camera,
+      title: 'AI Room Analysis',
+      description: 'Upload a photo and get instant color palette, theme, and dimension analysis',
+      gradient: 'from-purple-500 to-pink-500'
+    },
+    {
       icon: Eye,
       title: 'AR Visualization',
-      description: 'See furniture in your actual space with pixel-perfect accuracy using advanced AR technology'
+      description: 'See furniture in your space with realistic lighting and accurate scaling',
+      gradient: 'from-blue-500 to-purple-500'
     },
     {
       icon: Brain,
-      title: 'AI Design Assistant',
-      description: 'Get intelligent recommendations based on your space, style preferences, and color palette'
-    },
-    {
-      icon: Layers,
-      title: 'Real-time Rendering',
-      description: 'Experience instant 3D rendering with realistic lighting, shadows, and material textures'
+      title: 'Smart Recommendations',
+      description: 'Get personalized furniture suggestions based on your style and space',
+      gradient: 'from-green-500 to-blue-500'
     }
   ];
 
+  const capabilities = [
+    { title: 'AI Analysis', description: 'Room color & style detection', icon: Brain },
+    { title: 'AR Preview', description: 'Real-time 3D visualization', icon: Eye },
+    { title: 'Smart Search', description: 'Intelligent furniture matching', icon: Sofa },
+    { title: 'Multiple Sources', description: 'Sketchfab & local models', icon: Star }
+  ];
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentImageIndex((prev) => (prev + 1) % heroImages.length);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, []);
+
   return (
-    <div className="min-h-screen bg-black overflow-hidden relative">
-      {/* Animated Background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-violet-900/20 via-purple-900/10 to-black">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,_rgba(139,_92,_246,_0.1)_0%,_transparent_50%)]" />
-      </div>
-
-      {/* Diagonal Scrolling Furniture Images */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {/* First diagonal row - moving right */}
-        <div 
-          className="absolute flex items-center gap-8 animate-diagonal-scroll-right"
-          style={{
-            top: '10%',
-            left: '-50%',
-            transform: `translateX(${scrollY * 0.5}px) rotate(15deg)`,
-            width: '200%'
-          }}
-        >
-          {furnitureImages.slice(0, 4).map((item, index) => (
-            <div
-              key={`row1-${index}`}
-              className="w-32 h-32 flex-shrink-0 transform hover:scale-110 transition-all duration-500 opacity-60 hover:opacity-100"
-              style={{
-                animationDelay: `${index * 0.3}s`
-              }}
-            >
-              <img
-                src={item.url}
-                alt={item.title}
-                className="w-full h-full object-cover rounded-2xl shadow-2xl border border-violet-500/30"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-violet-900/40 to-transparent rounded-2xl" />
-            </div>
-          ))}
-        </div>
-
-        {/* Second diagonal row - moving left */}
-        <div 
-          className="absolute flex items-center gap-8 animate-diagonal-scroll-left"
-          style={{
-            top: '30%',
-            right: '-50%',
-            transform: `translateX(-${scrollY * 0.3}px) rotate(-12deg)`,
-            width: '200%'
-          }}
-        >
-          {furnitureImages.slice(4, 8).map((item, index) => (
-            <div
-              key={`row2-${index}`}
-              className="w-28 h-28 flex-shrink-0 transform hover:scale-110 transition-all duration-500 opacity-50 hover:opacity-100"
-              style={{
-                animationDelay: `${index * 0.4}s`
-              }}
-            >
-              <img
-                src={item.url}
-                alt={item.title}
-                className="w-full h-full object-cover rounded-xl shadow-xl border border-purple-500/20"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-purple-900/40 to-transparent rounded-xl" />
-            </div>
-          ))}
-        </div>
-
-        {/* Third diagonal row - moving right slow */}
-        <div 
-          className="absolute flex items-center gap-6 animate-diagonal-scroll-right-slow"
-          style={{
-            top: '60%',
-            left: '-40%',
-            transform: `translateX(${scrollY * 0.2}px) rotate(8deg)`,
-            width: '180%'
-          }}
-        >
-          {furnitureImages.slice(2, 6).map((item, index) => (
-            <div
-              key={`row3-${index}`}
-              className="w-24 h-24 flex-shrink-0 transform hover:scale-110 transition-all duration-500 opacity-40 hover:opacity-80"
-              style={{
-                animationDelay: `${index * 0.5}s`
-              }}
-            >
-              <img
-                src={item.url}
-                alt={item.title}
-                className="w-full h-full object-cover rounded-lg shadow-lg border border-violet-400/20"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-violet-800/30 to-transparent rounded-lg" />
-            </div>
-          ))}
-        </div>
-
-        {/* Fourth diagonal row - moving left fast */}
-        <div 
-          className="absolute flex items-center gap-10 animate-diagonal-scroll-left-fast"
-          style={{
-            top: '80%',
-            right: '-60%',
-            transform: `translateX(-${scrollY * 0.7}px) rotate(-20deg)`,
-            width: '220%'
-          }}
-        >
-          {furnitureImages.slice(1, 5).map((item, index) => (
-            <div
-              key={`row4-${index}`}
-              className="w-36 h-36 flex-shrink-0 transform hover:scale-110 transition-all duration-500 opacity-30 hover:opacity-70"
-              style={{
-                animationDelay: `${index * 0.2}s`
-              }}
-            >
-              <img
-                src={item.url}
-                alt={item.title}
-                className="w-full h-full object-cover rounded-3xl shadow-2xl border border-purple-600/30"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-purple-900/50 to-transparent rounded-3xl" />
-            </div>
-          ))}
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 relative overflow-hidden">
+      {/* Animated Background Elements */}
+      <div className="absolute inset-0">
+        {/* Floating Orbs */}
+        <div className="absolute top-20 left-10 w-32 h-32 bg-purple-500/20 rounded-full blur-xl animate-float-slow"></div>
+        <div className="absolute top-40 right-20 w-24 h-24 bg-blue-500/20 rounded-full blur-xl animate-float-medium"></div>
+        <div className="absolute bottom-40 left-1/4 w-40 h-40 bg-pink-500/15 rounded-full blur-xl animate-float-fast"></div>
+        
+        {/* Grid Pattern */}
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZGVmcz48cGF0dGVybiBpZD0iZ3JpZCIgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiBwYXR0ZXJuVW5pdHM9InVzZXJTcGFjZU9uVXNlIj48cGF0aCBkPSJNIDQwIDAgTCAwIDAgMCA0MCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJyZ2JhKDI1NSwyNTUsMjU1LDAuMDMpIiBzdHJva2Utd2lkdGg9IjEiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjZ3JpZCkiLz48L3N2Zz4=')] opacity-30"></div>
       </div>
 
       {/* Hero Section */}
-      <div ref={heroRef} className="relative z-10 px-6 pt-20 pb-16 min-h-screen flex flex-col justify-center">
-        {/* Logo and Title */}
-        <div className="text-center mb-12">
-          <div className="inline-flex items-center justify-center w-24 h-24 bg-gradient-to-r from-violet-600 to-purple-600 rounded-3xl mb-8 shadow-2xl animate-pulse-glow animate-float">
-            <Scan className="w-12 h-12 text-white animate-pulse" />
+      <div className="relative z-10 px-6 pt-20 pb-16">
+        {/* Header */}
+        <div className="text-center mb-16">
+          <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-purple-600 to-blue-600 rounded-2xl mb-8 shadow-2xl animate-pulse-glow">
+            <Scan className="w-10 h-10 text-white" />
           </div>
           
-          {/* Large Background Text */}
-          <div className="relative mb-8">
-            <h1 className="text-8xl font-black text-transparent bg-clip-text bg-gradient-to-r from-violet-600/20 to-purple-600/20 absolute inset-0 transform scale-110 -z-10 animate-shimmer">
-              VIBEAR
-            </h1>
-            <h1 className="text-5xl font-bold mb-4 relative z-10 animate-bounce-in">
-              <span className="text-white">Vibe</span>
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-purple-400 animate-text-glow">AR</span>
-            </h1>
-          </div>
+          <h1 className="text-6xl font-extrabold mb-4 animate-slide-in-up">
+            <span className="text-white">Vibe</span>
+            <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">AR</span>
+          </h1>
+          
+          <p className="text-xl text-white/80 mb-6 font-medium animate-slide-in-up" style={{animationDelay: '0.2s'}}>
+            Experimental AR Furniture Visualization
+          </p>
+          
+          <p className="text-gray-300 max-w-sm mx-auto mb-8 animate-slide-in-up" style={{animationDelay: '0.4s'}}>
+            Explore how AI and AR can help you visualize furniture in your space
+          </p>
+        </div>
 
-          <p className="text-2xl text-gray-300 leading-relaxed max-w-lg mx-auto mb-4 animate-fade-in-up" style={{animationDelay: '0.2s'}}>
-            The Future of <span className="text-violet-400 font-semibold gradient-text">Interior Design</span> is Here
-          </p>
-          <p className="text-lg text-gray-400 max-w-md mx-auto mb-8 animate-fade-in-up" style={{animationDelay: '0.4s'}}>
-            Visualize, customize, and perfect your space with cutting-edge AR + AI technology
-          </p>
+        {/* Hero Image Carousel */}
+        <div className="relative h-64 mb-12 overflow-hidden rounded-3xl animate-slide-in-up" style={{animationDelay: '0.6s'}}>
+          <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent z-10"></div>
+          {heroImages.map((image, index) => (
+            <div
+              key={index}
+              className={`absolute inset-0 transition-all duration-1000 ${
+                index === currentImageIndex ? 'opacity-100 scale-100' : 'opacity-0 scale-110'
+              }`}
+            >
+              <img
+                src={image.url}
+                alt={image.title}
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute bottom-4 left-4 z-20">
+                <h3 className="text-white font-bold text-lg">{image.title}</h3>
+                <p className="text-white/80 text-sm">{image.subtitle}</p>
+              </div>
+            </div>
+          ))}
+          
+          {/* Image Indicators */}
+          <div className="absolute bottom-4 right-4 flex gap-2 z-20">
+            {heroImages.map((_, index) => (
+              <div
+                key={index}
+                className={`w-2 h-2 rounded-full transition-all ${
+                  index === currentImageIndex ? 'bg-white' : 'bg-white/40'
+                }`}
+              />
+            ))}
+          </div>
         </div>
 
         {/* CTA Buttons */}
-        <div className="space-y-4 mb-8">
+        <div className="space-y-4 mb-12">
           <button
-            onClick={() => navigate('/search')}
-            className="w-full bg-gradient-to-r from-violet-600 to-purple-600 text-white py-6 rounded-2xl font-bold text-xl shadow-2xl hover:shadow-violet-500/25 transform hover:scale-105 transition-all duration-300 flex items-center justify-center gap-4 group relative overflow-hidden animate-pulse-glow"
+            onClick={() => navigate('/vibekit-ar')}
+            className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-5 rounded-2xl font-bold text-lg shadow-2xl hover:shadow-blue-500/25 transform hover:scale-105 transition-all duration-300 flex items-center justify-center gap-3 group animate-slide-in-up"
+            style={{animationDelay: '0.6s'}}
           >
-            <div className="absolute inset-0 bg-gradient-to-r from-violet-500 to-purple-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-            <Play className="w-8 h-8 group-hover:scale-110 transition-transform relative z-10" />
-            <span className="relative z-10">Start Your AR Journey</span>
-            <ArrowRight className="w-6 h-6 group-hover:translate-x-2 transition-transform relative z-10" />
+            <Scan className="w-6 h-6 group-hover:rotate-12 transition-transform" />
+            <span>VibeKit AR Experience</span>
+            <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
           </button>
           
           <button
-            onClick={() => navigate('/ar-demo')}
-            className="w-full glass text-white py-4 rounded-xl font-semibold text-lg hover:bg-violet-500/10 transition-all duration-300 flex items-center justify-center gap-3 group border border-violet-500/30 hover:border-violet-400/60"
+            onClick={() => navigate('/ai-analysis')}
+            className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-4 rounded-xl font-semibold shadow-lg hover:shadow-purple-500/25 transform hover:scale-105 transition-all duration-300 flex items-center justify-center gap-3 group animate-slide-in-up"
+            style={{animationDelay: '0.8s'}}
           >
-            <Sparkles className="w-5 h-5 group-hover:rotate-12 transition-transform" />
-            <span>Try AR Demo</span>
+            <Brain className="w-6 h-6 group-hover:rotate-12 transition-transform" />
+            <span>Analyze Your Room</span>
+          </button>
+          
+          <button
+            onClick={() => navigate('/search')}
+            className="w-full bg-white/10 backdrop-blur-sm text-white py-4 rounded-xl font-semibold border border-white/20 hover:bg-white/20 transition-all duration-300 flex items-center justify-center gap-3 group animate-slide-in-up"
+            style={{animationDelay: '1s'}}
+          >
+            <ShoppingBag className="w-5 h-5 group-hover:scale-110 transition-transform" />
+            <span>Browse Furniture</span>
           </button>
         </div>
 
-        {/* Scroll Indicator */}
-        <div className="flex justify-center animate-bounce">
-          <ChevronDown className="w-8 h-8 text-violet-400 opacity-70" />
+        {/* Capabilities Section */}
+        <div className="grid grid-cols-2 gap-4 mb-16 animate-slide-in-up" style={{animationDelay: '1.2s'}}>
+          {capabilities.map((capability, index) => {
+            const Icon = capability.icon;
+            return (
+              <div key={index} className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 text-center border border-white/10">
+                <Icon className="w-6 h-6 text-purple-400 mx-auto mb-2" />
+                <div className="text-lg font-bold text-white mb-1">{capability.title}</div>
+                <div className="text-xs text-gray-300">{capability.description}</div>
+              </div>
+            );
+          })}
         </div>
       </div>
 
       {/* Features Section */}
       <div className="relative z-10 px-6 pb-16">
-        <h2 className="text-3xl font-bold text-white mb-2 text-center animate-fade-in-up">
-          Why Choose VibeAR?
+        <h2 className="text-3xl font-bold text-white text-center mb-12 animate-slide-in-up">
+          How VibeAR Works
         </h2>
-        <p className="text-gray-400 text-center mb-12 animate-fade-in-up" style={{animationDelay: '0.2s'}}>
-          Experience the next generation of interior design with AR + AI
-        </p>
         
         <div className="space-y-6">
           {features.map((feature, index) => {
@@ -269,20 +205,18 @@ const Home = () => {
             return (
               <div
                 key={index}
-                className="glass rounded-3xl p-8 border border-violet-500/20 shadow-2xl hover:shadow-violet-500/10 transition-all duration-500 transform hover:scale-105 group animate-slide-in-right"
-                style={{
-                  animationDelay: `${index * 0.2}s`
-                }}
+                className="bg-white/10 backdrop-blur-sm rounded-3xl p-6 border border-white/10 hover:bg-white/15 transition-all duration-300 group animate-slide-in-up"
+                style={{animationDelay: `${0.2 * index}s`}}
               >
-                <div className="flex items-start gap-6">
-                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-r from-violet-600 to-purple-600 flex items-center justify-center shadow-xl group-hover:scale-110 group-hover:rotate-12 transition-all duration-300 animate-pulse-glow">
-                    <Icon className="w-8 h-8 text-white group-hover:scale-110 transition-transform" />
+                <div className="flex items-start gap-4">
+                  <div className={`w-14 h-14 rounded-2xl bg-gradient-to-r ${feature.gradient} flex items-center justify-center shadow-xl group-hover:scale-110 transition-transform`}>
+                    <Icon className="w-7 h-7 text-white" />
                   </div>
                   <div className="flex-1">
-                    <h3 className="font-bold text-xl text-white group-hover:gradient-text transition-colors mb-3">
+                    <h3 className="font-bold text-xl text-white mb-2 group-hover:text-purple-300 transition-colors">
                       {feature.title}
                     </h3>
-                    <p className="text-gray-300 leading-relaxed group-hover:text-white transition-colors">
+                    <p className="text-gray-300 leading-relaxed">
                       {feature.description}
                     </p>
                   </div>
@@ -293,24 +227,49 @@ const Home = () => {
         </div>
       </div>
 
-      {/* What is VibeAR Section */}
+      {/* About Section */}
       <div className="relative z-10 px-6 pb-20">
-        <div className="glass rounded-3xl p-8 border border-violet-500/30 hover:border-violet-400/50 transition-all duration-500 group animate-fade-in-up">
-          <h2 className="text-3xl font-bold text-white mb-6 text-center group-hover:gradient-text transition-colors">
-            What is VibeAR?
-          </h2>
+        <div className="bg-gradient-to-r from-purple-600/20 to-pink-600/20 backdrop-blur-sm rounded-3xl p-8 border border-white/10 animate-slide-in-up">
+          <div className="text-center mb-6">
+            <div className="inline-flex items-center gap-2 mb-4">
+              <HomeIcon className="w-6 h-6 text-purple-400" />
+              <span className="text-purple-400 font-semibold">About VibeAR</span>
+            </div>
+            <h2 className="text-2xl font-bold text-white mb-4">
+              The Future of Interior Design
+            </h2>
+          </div>
+          
           <div className="space-y-4 text-gray-300 leading-relaxed">
-            <p className="text-lg group-hover:text-white transition-colors">
-              <span className="text-violet-400 font-semibold gradient-text">VibeAR</span> is a revolutionary augmented reality platform that transforms how you design and visualize your living spaces.
+            <p>
+              <span className="text-purple-400 font-semibold">VibeAR</span> is an experimental platform 
+              that combines artificial intelligence with augmented reality to help you visualize furniture 
+              in your space before making purchase decisions.
             </p>
-            <p className="group-hover:text-white transition-colors">
-              Using advanced AI and AR technology, we help you make confident furniture decisions by letting you see exactly how items will look and fit in your actual space before you buy.
+            <p>
+              Upload a photo of your room to get AI-powered analysis of colors and style, then browse 
+              3D furniture models from Sketchfab and our local collection to see how they would look 
+              in your actual space using AR technology.
             </p>
-            <p className="text-violet-300 font-medium group-hover:scale-105 transition-transform inline-block">
-              Say goodbye to expensive mistakes and hello to your perfect space! 🏠✨
-            </p>
+            <div className="flex items-center justify-center gap-2 pt-4">
+              <Star className="w-5 h-5 text-yellow-400" />
+              <span className="text-white font-medium">Prototype - Explore the possibilities</span>
+              <Star className="w-5 h-5 text-yellow-400" />
+            </div>
           </div>
         </div>
+      </div>
+
+      {/* Bottom CTA */}
+      <div className="relative z-10 px-6 pb-8">
+        <button
+          onClick={() => navigate('/ar-demo')}
+          className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-3 group shadow-2xl hover:shadow-blue-500/25 transform hover:scale-105 transition-all duration-300 animate-slide-in-up"
+        >
+          <Play className="w-5 h-5 group-hover:scale-110 transition-transform" />
+          <span>Try AR Demo</span>
+          <Sparkles className="w-5 h-5 group-hover:rotate-12 transition-transform" />
+        </button>
       </div>
     </div>
   );

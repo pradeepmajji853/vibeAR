@@ -1,0 +1,3 @@
+# Temporarily exclude the largest GLB file
+assets/wooden_tablechair__low-poly__game-ready.glb
+public/wooden_tablechair__low-poly__game-ready.glb
