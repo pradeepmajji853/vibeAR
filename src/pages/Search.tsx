@@ -85,10 +85,10 @@ const Search = () => {
       category: 'Dining',
       author: 'Local Collection',
       thumbnail: 'https://images.pexels.com/photos/1571460/pexels-photo-1571460.jpeg?auto=compress&cs=tinysrgb&w=300',
-      description: 'Low-poly game-ready wooden table and chair set',
+      description: 'Classic wooden table and chair set',
       likeCount: 52,
       isDownloadable: true,
-      modelUrl: '/wooden_tablechair__low-poly__game-ready.glb',
+      modelUrl: '/old_wooden_chair.glb',
       embedUrl: null
     },
     {
