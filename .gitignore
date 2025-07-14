@@ -45,3 +45,6 @@ dist-ssr
 # Large assets (uncomment if needed)
 # *.glb
 # *.gltf
+
+# Allow GLB files in public folder for AR models
+!public/*.glb
