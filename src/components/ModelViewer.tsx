@@ -26,16 +26,28 @@ const ModelViewer: React.FC<ModelViewerProps> = ({
   const [modelError, setModelError] = useState(false);
 
   useEffect(() => {
-    // Import model-viewer dynamically
-    import('@google/model-viewer');
+    // Import model-viewer dynamically with better error handling
+    const loadModelViewer = async () => {
+      try {
+        await import('@google/model-viewer');
+        console.log('Model viewer loaded successfully');
+      } catch (error) {
+        console.error('Failed to load model-viewer:', error);
+        setModelError(true);
+      }
+    };
+    
+    loadModelViewer();
   }, []);
 
   const handleModelLoad = () => {
+    console.log('Model loaded successfully:', src);
     setModelLoaded(true);
     setModelError(false);
   };
 
   const handleModelError = () => {
+    console.error('Model failed to load:', src);
     setModelError(true);
     setModelLoaded(false);
   };
@@ -66,6 +78,12 @@ const ModelViewer: React.FC<ModelViewerProps> = ({
     }
   };
 
+  // Debug: Log the src URL
+  useEffect(() => {
+    console.log('ModelViewer src:', src);
+    console.log('ModelViewer full URL:', window.location.origin + src);
+  }, [src]);
+
   return (
     <div className={`relative ${className}`}>
       {!modelError ? (
@@ -93,6 +111,9 @@ const ModelViewer: React.FC<ModelViewerProps> = ({
           <h4 className="text-white font-medium mb-2">Model Unavailable</h4>
           <p className="text-gray-400 text-sm">
             This 3D model couldn't be loaded
+          </p>
+          <p className="text-gray-500 text-xs mt-2">
+            URL: {src}
           </p>
         </div>
       )}

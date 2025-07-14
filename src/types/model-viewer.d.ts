@@ -2,6 +2,7 @@
 declare namespace JSX {
   interface IntrinsicElements {
     'model-viewer': {
+      ref?: React.Ref<any>;
       src?: string;
       alt?: string;
       'auto-rotate'?: boolean;

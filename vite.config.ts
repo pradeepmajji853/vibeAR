@@ -25,6 +25,23 @@ export default defineConfig({
     exclude: ['lucide-react'],
   },
   assetsInclude: ['**/*.glb', '**/*.gltf'],
+  build: {
+    rollupOptions: {
+      output: {
+        // Ensure GLB files are treated as assets
+        assetFileNames: (assetInfo) => {
+          const info = assetInfo.name?.split('.') || [];
+          const ext = info[info.length - 1];
+          if (/glb|gltf/.test(ext ?? '')) {
+            return `[name].[ext]`;
+          }
+          return `assets/[name]-[hash][extname]`;
+        },
+      }
+    },
+    // Copy GLB files to root of dist
+    copyPublicDir: true,
+  },
   server: {
     host: true, // Allow external connections
     port: 5174, // Using 5174 as per your current setup
